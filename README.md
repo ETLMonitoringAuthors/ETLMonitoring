@@ -13,9 +13,9 @@
 ├── tdmpc2/               # Newt world model — provides embeddings for MetaWorld experiments
 ├── etl_d3il/             # ETL evaluation on D3IL sorting & stacking tasks
 ├── etl_image_ablations/  # ETL evaluation on MetaWorld and DROID
-├── csv/                  # Precomputed results
-├── assets/               # Task visualizations
+├── assets/               # Monitoring visualizations
 ├── docker/               # Docker setup
+├── generate_videos.py    # Generate ETL monitoring GIFs from live simulator rollouts
 └── download_checkpoints.py
 ```
 
@@ -51,7 +51,9 @@ cd docker && docker build . -t etl:1.0.0
 
 ### Dubins Car (Section 5.1)
 
-The Dubins car experiments use the encoder from the AnySafe world model (Agrawal et al., 2025). The evaluation code is available in the companion AnySafe repository. ETL monitoring evaluation can be run after loading the encoder following the instructions in that repository.
+The Dubins car experiments use the encoder from the AnySafe world model (Agrawal et al., 2025). ETL monitoring evaluation can be run after loading the encoder following the instructions in the companion repository:
+
+**[AnySafe — github.com/CMU-IntentLab/AnySafeReachability](https://github.com/CMU-IntentLab/AnySafeReachability)**
 
 ----
 
@@ -129,6 +131,10 @@ python -m etl_image_ablations.eval_droid_phasic
 
 ### Newt world model (training / checkpoints)
 
+The Newt world model and pretrained checkpoints are also available at:
+
+**[Newt — huggingface.co/nicklashansen/newt](https://huggingface.co/nicklashansen/newt)**
+
 ```bash
 cd tdmpc2
 
@@ -140,15 +146,6 @@ python train.py
 
 # Single-task
 python train.py model_size=B task=metaworld-pick-place-wall-v2
-```
-
-----
-
-## Precomputed Results
-
-```python
-import pandas as pd
-results = pd.read_csv("./csv/newt/newt_avg.csv")
 ```
 
 ----
