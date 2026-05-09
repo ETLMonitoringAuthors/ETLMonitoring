@@ -167,7 +167,7 @@ def _monitoring_panel(
     """Render the monitoring panel up to timestep t; return as RGB numpy array."""
     fig, axes = plt.subplots(
         4, 1, figsize=(width_px / 100, 3.2),
-        gridspec_kw={"height_ratios": [2.0, 2.0, 0.55, 0.55]},
+        gridspec_kw={"height_ratios": [2.0, 2.0, 0.7, 0.7]},
     )
     ts = np.arange(T)
 
@@ -180,22 +180,22 @@ def _monitoring_panel(
     # Panel 0 — grasp distance
     ax = axes[0]
     ax.set_ylim(-0.1, 4.8)
-    ax.plot(ts[:t+1], d_grasp[:t+1], color=ETL_COLOR, lw=1.3)
-    ax.axhline(tau_grasp, color="red", ls="--", lw=1.0, label=rf"$\tau_A$={tau_grasp:.2f}")
-    ax.set_ylabel(r"dist$(z_t,z_A)$" + "\n(grasp)", fontsize=7)
-    ax.legend(fontsize=6, loc="upper right")
+    ax.plot(ts[:t+1], d_grasp[:t+1], color=ETL_COLOR, lw=1.5)
+    ax.axhline(tau_grasp, color="red", ls="--", lw=1.2, label=rf"$\tau_A$={tau_grasp:.2f}")
+    ax.set_ylabel(r"dist$(z_t,z_A)$" + "\n(grasp)", fontsize=9)
+    ax.legend(fontsize=8, loc="upper right")
     ax.set_xticklabels([])
-    ax.tick_params(labelsize=6)
+    ax.tick_params(labelsize=8)
 
     # Panel 1 — place distance
     ax = axes[1]
     ax.set_ylim(-0.1, 5.0)
-    ax.plot(ts[:t+1], d_place[:t+1], color=PLACE_COLOR, lw=1.3)
-    ax.axhline(tau_place, color="red", ls="--", lw=1.0, label=rf"$\tau_B$={tau_place:.2f}")
-    ax.set_ylabel(r"dist$(z_t,z_B)$" + "\n(place)", fontsize=7)
-    ax.legend(fontsize=6, loc="upper right")
+    ax.plot(ts[:t+1], d_place[:t+1], color=PLACE_COLOR, lw=1.5)
+    ax.axhline(tau_place, color="red", ls="--", lw=1.2, label=rf"$\tau_B$={tau_place:.2f}")
+    ax.set_ylabel(r"dist$(z_t,z_B)$" + "\n(place)", fontsize=9)
+    ax.legend(fontsize=8, loc="upper right")
     ax.set_xticklabels([])
-    ax.tick_params(labelsize=6)
+    ax.tick_params(labelsize=8)
 
     # Predicate bars
     bar_data = [
@@ -206,7 +206,7 @@ def _monitoring_panel(
         ax = axes[2 + i]
         ax.set_xlim(0, T - 1); ax.set_ylim(0, 2)
         ax.set_yticks([0.5, 1.5])
-        ax.set_yticklabels([lg, lp], fontsize=6)
+        ax.set_yticklabels([lg, lp], fontsize=8)
         ax.spines["left"].set_visible(False)
         ax.spines["bottom"].set_visible(False)
         ax.grid(False)
@@ -215,14 +215,14 @@ def _monitoring_panel(
                 ax.barh(1.5, 1, left=j, height=0.55, color=col, align="center")
             if gt[j]:
                 ax.barh(0.5, 1, left=j, height=0.55, color=GT_COLOR, align="center")
-        ax.tick_params(labelsize=6)
+        ax.tick_params(labelsize=8)
 
-    axes[-1].set_xlabel("Timestep", fontsize=7)
-    axes[-1].tick_params(labelsize=6)
+    axes[-1].set_xlabel("Timestep", fontsize=9)
+    axes[-1].tick_params(labelsize=8)
     fig.tight_layout(h_pad=0.3)
 
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
+    fig.savefig(buf, format="png", dpi=200, bbox_inches="tight")
     plt.close(fig)
     buf.seek(0)
     panel = np.array(Image.open(buf).convert("RGB"))
@@ -252,12 +252,10 @@ def composite_frames(
             gt_grasp, gt_place,
             width_px=W,
         )
-        # resize panel width to match sim frame
-        if panel.shape[1] != W:
-            panel = np.array(
-                Image.fromarray(panel).resize((W, panel.shape[0]),
-                                              Image.LANCZOS)
-            )
+        # resize panel to fixed dimensions: width=sim, height=320px
+        panel = np.array(
+            Image.fromarray(panel).resize((W, 320), Image.LANCZOS)
+        )
         composite = np.vstack([sim, panel])
         frames_out.append(composite)
         if (t + 1) % 20 == 0:
@@ -350,6 +348,10 @@ def main():
         if raw_frames.dtype != torch.uint8
         else f.numpy()
         for f in raw_frames
+    ]
+    sim_frames = [
+        np.array(Image.fromarray(f).resize((480, 480), Image.LANCZOS))
+        for f in sim_frames
     ]
 
     # composite
