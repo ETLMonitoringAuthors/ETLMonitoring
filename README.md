@@ -1,27 +1,8 @@
-<h1>MMBench & Newt</h1>
+<h1>Embedding Temporal Logic (ETL) — Anonymous Submission</h1>
 
-Official code repository for the paper
+Anonymous Author(s)
 
-**[Title redacted for anonymous review]**
-
-Anonymous Authors
-
-<img src="assets/0.gif" width="12.5%"><img src="assets/1.gif" width="12.5%"><img src="assets/2.gif" width="12.5%"><img src="assets/3.gif" width="12.5%"><img src="assets/4.gif" width="12.5%"><img src="assets/5.gif" width="12.5%"><img src="assets/6.gif" width="12.5%"><img src="assets/7.gif" width="12.5%"></br>
-
-----
-
-## MMBench
-
-MMBench contains a total of **200** unique continuous control tasks for training of massively multitask RL policies. The task suite consists of 159 existing tasks proposed in previous work, 22 new tasks and task variants for these existing domains, as well as 19 entirely new arcade-style tasks that we dub *MiniArcade*. MMBench tasks span multiple domains and embodiments, and each task comes with language instructions, demonstrations, and optionally image observations, enabling research on both multitask pretraining, offline-to-online RL, and RL from scratch.
-
-<img src="assets/0.png" width="100%" style="max-width: 640px"><br/>
-
-
-## Newt
-
-Newt is a language-conditioned multitask world model based on [TD-MPC2](https://www.tdmpc2.com). We train Newt by first pretraining on demonstrations to acquire task-aware representations and action priors, and then jointly optimizing with online interaction across all tasks. To extend TD-MPC2 to the massively multitask online setting, we propose a series of algorithmic improvements including a refined architecture, model-based pretraining on the available demonstrations, additional action supervision in RL policy updates, and a drastically accelerated training pipeline.
-
-<img src="assets/1.png" width="100%" style="max-width: 640px"><br/>
+<img src="assets/0.gif" width="12.5%"><img src="assets/1.gif" width="12.5%"><img src="assets/2.gif" width="12.5%"><img src="assets/3.gif" width="12.5%"><img src="assets/4.gif" width="12.5%"><img src="assets/5.gif" width="12.5%"><img src="assets/6.gif" width="12.5%"><img src="assets/7.gif" width="12.5%">
 
 ----
 
@@ -29,10 +10,10 @@ Newt is a language-conditioned multitask world model based on [TD-MPC2](https://
 
 ```
 .
-├── tdmpc2/               # Core Newt/TD-MPC2 implementation
-├── fiper_etl/            # ETL evaluation on sorting & stacking tasks
-├── etl_image_ablations/  # MetaWorld ETL experiments and ablations
-├── csv/                  # Precomputed results (newt, tdmpc2, baselines)
+├── tdmpc2/               # Newt world model — provides embeddings for MetaWorld experiments
+├── etl_d3il/             # ETL evaluation on D3IL sorting & stacking tasks
+├── etl_image_ablations/  # ETL evaluation on MetaWorld and DROID
+├── csv/                  # Precomputed results
 ├── assets/               # Task visualizations
 ├── docker/               # Docker setup
 └── download_checkpoints.py
@@ -41,17 +22,6 @@ Newt is a language-conditioned multitask world model based on [TD-MPC2](https://
 ----
 
 ## Getting started
-
-We provide three options for getting started with our codebase: (1) local installation using `conda`, (2) building a `docker` image using our provided `Dockerfile`, or (3) using our prebuilt `docker` image hosted on Docker Hub.
-
-First, we recommend downloading required ManiSkill assets from HuggingFace:
-
-```bash
-wget https://huggingface.co/datasets/nicklashansen/mmbench/resolve/main/maniskill.tar.gz
-tar -xvf maniskill.tar.gz && mv .maniskill ~ && rm maniskill.tar.gz
-```
-
-This creates a `.maniskill` folder in your home directory (the default location for ManiSkill assets). You can specify a different location with `MANISKILL_ASSET_DIR`.
 
 ### Option 1: Local installation with conda
 
@@ -62,116 +32,119 @@ pip install --no-cache-dir 'ale_py==0.10'
 export MS_SKIP_ASSET_DOWNLOAD_PROMPT=1
 ```
 
-### Option 2: Building a docker image
+Download required ManiSkill assets (needed for MetaWorld experiments):
 
 ```bash
-cd docker && docker build . -t newt:1.0.0
+wget https://huggingface.co/datasets/nicklashansen/mmbench/resolve/main/maniskill.tar.gz
+tar -xvf maniskill.tar.gz && mv .maniskill ~ && rm maniskill.tar.gz
 ```
 
-### Option 3: Using a prebuilt docker image
+### Option 2: Docker
 
 ```bash
-docker pull nicklashansen/newt:1.0.0
+cd docker && docker build . -t etl:1.0.0
 ```
 
 ----
 
 ## Experiments
 
-### MetaWorld (ETL image ablations)
+### Dubins Car (Section 5.1)
 
-Sequential predicate evaluation (e.g., grasp → place) on MetaWorld tasks using Newt embeddings:
+The Dubins car experiments use the encoder from the AnySafe world model (Agrawal et al., 2025). The evaluation code is available in the companion AnySafe repository. ETL monitoring evaluation can be run after loading the encoder following the instructions in that repository.
+
+----
+
+### Sorting & Stacking — D3IL (Section 5.2)
+
+ETL vs. PCA-kmeans (Liu et al., 2024) and logpZO (Xu et al., 2025) on D3IL sequential manipulation tasks.
 
 ```bash
-# Run ETL evaluation on MetaWorld
+cd etl_d3il
+
+# Install dependencies
+conda env create -f environment.yml
+conda activate etl_d3il
+
+# Download D3IL rollout data and place in:
+#   etl_d3il/data/{task}/rollouts/
+# Data available at: https://drive.google.com/drive/folders/1VuI3eQmFHT2QKCSYZGQ2pAuuhwNJkGCu
+
+# Run ETL vs baselines on sorting (prints table)
+python scripts/run_etl_comparison.py task=sorting \
+    methods='["etl","etl_temporal","etl_seq","similarity","logpzo"]'
+
+# Run on stacking
+python scripts/run_etl_comparison.py task=stacking \
+    methods='["etl","etl_temporal","etl_seq","similarity","logpzo"]'
+
+# Fast evaluation (obs_embeddings only)
+python scripts/run_etl_fast.py --tasks stacking sorting --n_phases 3
+```
+
+**Three ETL variants:**
+- `etl` — single-phase `F(near_goal)`
+- `etl_temporal` — K-phase sequential `F(near_0 ∧ F(near_1 ∧ ... ∧ F(near_K)))` *(paper contribution)*
+- `etl_seq` — sequential robustness via min-k distance
+
+----
+
+### MetaWorld pick-place-wall (Section 5.2)
+
+ETL vs. PCA-kmeans and logpZO using Newt world model embeddings.
+
+```bash
+# Download Newt checkpoint
+pip install -U huggingface_hub
+python download_checkpoints.py --filename "soup-L" --cache-dir="./checkpoints"
+
+# Run ETL sequential predicate evaluation
 cd /path/to/repo
 MUJOCO_GL=egl python -m etl_image_ablations.eval_mw_sequential_spec \
     --num-demos 40 --out-dir etl_results/mw_sequential
 
-# Run FIPER baselines on MetaWorld
-MUJOCO_GL=egl python -m etl_image_ablations.eval_mw_fiper_baselines \
-    --num-demos 40 --out-dir etl_results/mw_fiper_baselines
-
-# Run full ETL ablation suite
-python -m etl_image_ablations.run_image_etl_ablations
+# Run baselines (PCA-kmeans, logpZO) + ETL comparison
+MUJOCO_GL=egl python -m etl_image_ablations.eval_mw_baselines \
+    --num-demos 40 --out-dir etl_results/mw_baselines
 ```
 
-See `etl_image_ablations/` for additional scripts including conformal prediction thresholds, cross-task avoidance, and visualization tools.
+----
 
-### Sorting & Stacking (FIPER-ETL benchmark)
+### DROID real-world evaluation (Section 5.3)
 
-ETL evaluated against FIPER baselines on sequential manipulation tasks:
+ETL vs. Qwen2-VL on phasic DROID episodes.
 
 ```bash
-cd fiper_etl
+# Run ETL on DROID
+python -m etl_image_ablations.eval_droid_etl
 
-# Install dependencies
-conda env create -f environment.yml
-conda activate fiper
+# Run VLM baseline (requires Qwen2-VL)
+python -m etl_image_ablations.eval_vlm_droid_phasic
 
-# Download rollout data (see fiper_etl/README.md for data setup)
-# Place rollouts in: fiper_etl/data/{task}/rollouts/
-
-# Fast comparison: ETL variants vs baselines
-python scripts/run_etl_fast.py --tasks stacking sorting --n_phases 3
-
-# Full comparison with table output
-python scripts/run_etl_comparison.py task=sorting \
-    methods='["etl","etl_temporal","etl_seq","similarity","logpzo"]'
-
-# Complete pipeline (trains RND models + evaluates all methods)
-python scripts/run_fiper.py
+# Phasic evaluation
+python -m etl_image_ablations.eval_droid_phasic
 ```
 
-See `fiper_etl/ETL_README.md` for a full description of the three ETL variants and comparison with baselines.
+----
 
-### Training Newt
+### Newt world model (training / checkpoints)
 
 ```bash
 cd tdmpc2
 
-# Train a 20M parameter agent on all 200 MMBench tasks
+# Download checkpoints
+python download_checkpoints.py --all --cache-dir="./checkpoints"
+
+# Train from scratch (200-task multitask)
 python train.py
 
-# Train with larger model (80M parameters)
-python train.py model_size=XL
-
-# Train a single-task agent
-python train.py model_size=B task=walker-walk
-
-# Train with RGB observations
-python train.py obs=rgb
-
-# Resume from checkpoint
-python train.py checkpoint=<path/to/checkpoint.pt>
-```
-
-### Loading checkpoints
-
-```bash
-pip install -U huggingface_hub
-
-# Download a single checkpoint
-python download_checkpoints.py --filename "walker-walk" --cache-dir="./checkpoints"
-
-# Download all checkpoints
-python download_checkpoints.py --all --cache-dir="./checkpoints"
-```
-
-Multitask checkpoints use a `soup` prefix; model size is in the filename (`S=2M`, `B=5M`, `L=20M`, `XL=80M`). Use `model_size=B` when loading single-task checkpoints.
-
-### Generating demonstrations
-
-```bash
-cd tdmpc2
-python generate_demos.py task=walker-walk +num_demos=10 data_dir=<path/to/data>
+# Single-task
+python train.py model_size=B task=metaworld-pick-place-wall-v2
 ```
 
 ----
 
 ## Precomputed Results
-
-Precomputed results for Newt and baselines are in `csv/`. Results are provided at three levels of aggregation: `avg`, `by_domain`, and `by_task`.
 
 ```python
 import pandas as pd
@@ -182,4 +155,4 @@ results = pd.read_csv("./csv/newt/newt_avg.csv")
 
 ## License
 
-This project is licensed under the MIT License — see the `LICENSE` file for details. The repository relies on third-party code subject to their respective licenses.
+MIT License. See `LICENSE` for details.

@@ -1,7 +1,7 @@
 """
-eval_mw_fiper_baselines.py
+eval_mw_baselines.py
 --------------------------
-Run **logpZO** and **PCA-kmeans** (FIPER baselines) on MetaWorld pick-place-wall,
+Run **logpZO** and **PCA-kmeans** (embedding baselines) on MetaWorld pick-place-wall,
 using the *same* predicate-based eval pipeline as `eval_mw_sequential_spec.py`.
 ETL (cosine/L2 to spec-latent prototype) is included as well so all three
 methods are evaluated on the **same** cal/test split → apples-to-apples.
@@ -20,20 +20,20 @@ Methods
 * `pca_kmeans`— score = min_k ‖PCA(z_t) − c_k‖₂ with KMeans clusters fit on
                 cal positives.
 
-Why "for fiper":
-The FIPER paper introduces logpZO and PCA-kmeans as baselines for failure
-prediction.  We previously plugged them into the FIPER framework
-(`fiper_etl/`); here we run the same baselines on Newt-WM latents from
+Notes:
+The prior work introduces logpZO and PCA-kmeans as baselines for failure
+prediction.  We previously plugged them into the this framework
+(`etl_d3il/`); here we run the same baselines on Newt-WM latents from
 MetaWorld so we can directly compare them to ETL on a sequential predicate.
 
 Usage:
   cd /path/to/repo
-  MUJOCO_GL=egl python -m etl_image_ablations.eval_mw_fiper_baselines \
+  MUJOCO_GL=egl python -m etl_image_ablations.eval_mw_baselines \
       --num-demos 40 \
-      --out-dir etl_results/mw_fiper_baselines
+      --out-dir etl_results/mw_baselines
 
 Outputs under --out-dir/:
-  fiper_metrics.json  — full metrics for all 3 methods (etl/logpzo/pca_kmeans)
+  eval_metrics.json  — full metrics for all 3 methods (etl/logpzo/pca_kmeans)
   comparison.png      — side-by-side bar chart (F1/precision/recall/seq)
   cache/demos.pt      — cached demos so re-runs are fast
 """
@@ -62,8 +62,8 @@ from sklearn.metrics import roc_auc_score
 
 ROOT = Path(__file__).resolve().parents[1]
 TDMPC2_DIR = ROOT / "tdmpc2"
-FIPER_DIR = ROOT / "fiper_etl"
-for p in [str(TDMPC2_DIR), str(ROOT), str(FIPER_DIR)]:
+ETL_DIR = ROOT / "etl_d3il"
+for p in [str(TDMPC2_DIR), str(ROOT), str(ETL_DIR)]:
     if p not in sys.path:
         sys.path.insert(0, p)
 
@@ -86,7 +86,7 @@ from etl_image_ablations.run_image_etl_ablations import (  # noqa: E402
     encode_latent,
 )
 
-# logpZO model from the fiper_etl repo (reuse identical architecture).
+# logpZO model (flow-matching density estimator from Xu et al. 2025).
 from evaluation.method_eval_classes.logpzo_eval import (  # noqa: E402
     LogpZOModel,
 )
@@ -129,7 +129,7 @@ def train_logpzo(
     learning_rate: float,
     device: str,
 ) -> LogpZOModel:
-    """Train flow-matching model on positive-class cal embeddings (FIPER-style)."""
+    """Train flow-matching model on positive-class cal embeddings."""
     model = LogpZOModel(input_dim=embeddings.shape[-1]).to(device)
     optim = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
@@ -355,7 +355,7 @@ def plot_comparison(all_results: Dict[str, Dict], out_path: Path) -> None:
                 ha="center", fontsize=10, fontweight="bold")
     ax.grid(alpha=0.3, axis="y")
 
-    fig.suptitle(f"FIPER baselines vs ETL — {TASK}  (Newt WM latent)", fontsize=12)
+    fig.suptitle(f"embedding baselines vs ETL — {TASK}  (Newt WM latent)", fontsize=12)
     fig.tight_layout()
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, dpi=150, bbox_inches="tight")
@@ -490,7 +490,7 @@ def main():
 
     # ── save ──────────────────────────────────────────────────────────────
     all_results = {"etl": res_etl, "logpzo": res_logpzo, "pca_kmeans": res_pca}
-    metrics_path = args.out_dir / "fiper_metrics.json"
+    metrics_path = args.out_dir / "eval_metrics.json"
     with open(metrics_path, "w") as f:
         json.dump(
             {
@@ -521,7 +521,7 @@ def main():
 
     # Console summary
     print(f"\n{'─' * 70}")
-    print(f"{TASK}  —  FIPER baselines vs ETL  (n_test={len(test_demos)} demos)")
+    print(f"{TASK}  —  embedding baselines vs ETL  (n_test={len(test_demos)} demos)")
     print(f"{'─' * 70}")
     print(f"{'method':<14} | {'A_F1':>6} {'A_p':>6} {'A_r':>6} | "
           f"{'B_F1':>6} {'B_p':>6} {'B_r':>6} | {'seq':>6}")

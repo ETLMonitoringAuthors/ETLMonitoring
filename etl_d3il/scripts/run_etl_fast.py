@@ -3,7 +3,7 @@ run_etl_fast.py
 ---------------
 Fast standalone evaluation of ETL variants vs PCA-kmeans.
 Only loads obs_embeddings (skips RGB / action_preds) — much faster than the
-full FIPER pipeline which loads all tensors into memory.
+full pipeline which loads all tensors into memory.
 
 Usage:
     python scripts/run_etl_fast.py --tasks stacking sorting --n_phases 3
@@ -123,7 +123,7 @@ def mine_spec_latents(success_embs, K, success_pos=None):
       2. Fallback: proportional sampling — phase k → frame at (k+1)/K * T.
 
     The final frame of every success rollout anchors phase K-1 because
-    FIPER truncates rollouts exactly at task completion.
+    Rollouts are truncated rollouts exactly at task completion.
     """
     use_pos = success_pos is not None and any(p is not None for p in success_pos)
     phase_latents = []
@@ -195,10 +195,10 @@ def etl_scores(test_embs, spec_latents, mean_T, K, mode="temporal"):
     return all_scores
 
 
-# ── logpZO baseline (flow matching density estimator, FIPER's implementation) ─
+# ── logpZO baseline (flow matching density estimator) ─
 
 def logpzo_train(calib_embs_list, num_epochs=300, batch_size=256, lr=1e-3, device=None):
-    """Train FIPER's LogpZO flow model on calibration obs_embeddings."""
+    """Train LogpZO flow model on calibration obs_embeddings."""
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
     data = torch.tensor(np.concatenate(calib_embs_list, axis=0), dtype=torch.float32).to(device)

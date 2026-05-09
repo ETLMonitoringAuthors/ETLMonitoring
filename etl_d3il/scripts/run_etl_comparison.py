@@ -10,7 +10,7 @@ Usage:
 Typical override:
     python scripts/run_etl_comparison.py task=sorting methods='["etl","etl_temporal","etl_seq","similarity","logpzo"]'
 
-This mirrors scripts/run_fiper.py but restricts to the methods of interest
+This mirrors scripts/run_etl.py but restricts to the methods of interest
 and prints a human-readable per-method summary at the end.
 """
 
@@ -19,7 +19,7 @@ import numpy as np
 import hydra
 from omegaconf import DictConfig, OmegaConf
 
-# Make fiper_etl importable from root
+# Make etl_d3il importable from root
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from tasks.task_manager import TaskManager

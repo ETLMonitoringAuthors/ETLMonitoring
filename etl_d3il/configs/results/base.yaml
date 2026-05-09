@@ -211,5 +211,5 @@ method_name_mapping:
   similarity: "PCA-kmeans"
   rnd_a: "RND-A"
   logpzo: "logpZO"
-  rnd_oe_and_entropy: "FIPER"
+  
   rnd_oe_or_entropy: "RND-OE or ACE"

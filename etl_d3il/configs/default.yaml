@@ -1,0 +1,12 @@
+defaults:
+  - _self_
+  - eval: etl
+  - task: stacking
+  - results: base
+
+tasks: ["sorting", "stacking"]
+methods: ["similarity", "logpzo", "etl", "etl_temporal", "etl_seq"]
+
+# For input verification
+available_tasks: ["sorting", "stacking"]
+implemented_methods: ["similarity", "logpzo", "etl", "etl_temporal", "etl_seq"]

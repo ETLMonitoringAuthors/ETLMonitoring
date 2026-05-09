@@ -1,9 +1,9 @@
 """
 etl_eval.py
 -----------
-ETL (Embedding Temporal Logic) failure monitor for the FIPER benchmark.
+ETL (Embedding Temporal Logic) failure monitor.
 
-Two variants are provided, both fitting the FIPER BaseEvalClass interface:
+Two variants are provided:
 
 ETLEval  (method name: "etl")
   Single-phase WHERE spec.  Mines one goal spec latent z* from the LAST
@@ -24,7 +24,7 @@ ETLTemporalEval  (method name: "etl_temporal")
 
   and the score is cosine distance to z_{k(t)}.
 
-  Key advantage over all FIPER baselines:
+  Key advantage over all embedding baselines:
     PCA-kmeans / logpZO / RND-OE treat the full success distribution as
     a single unordered set.  They cannot detect "temporal mis-ordering"
     failures such as the robot reaching the goal too early (before grasping)
