@@ -1,0 +1,19 @@
+defaults:
+  - base
+
+# ETL temporal: K spec latents from K temporal phases of successful rollouts
+# The current phase is estimated from elapsed steps / mean success length.
+# Score = cosine_dist(z_t, z_{phase(t)})
+n_phases: 3
+
+required_tensors:
+  - "obs_embeddings"
+
+optional_tensors: []
+required_actions: []
+optional_actions: []
+
+hparams:
+  model:
+    n_phases: ${eval.n_phases}
+    required_tensors: ${eval.required_tensors}

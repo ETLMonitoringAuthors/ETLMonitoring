@@ -1,0 +1,17 @@
+defaults:
+  - base
+
+# ETL single-phase: goal spec latent from last k frames of successful rollouts
+last_k_frames: 10
+
+required_tensors:
+  - "obs_embeddings"
+
+optional_tensors: []
+required_actions: []
+optional_actions: []
+
+hparams:
+  model:
+    last_k_frames: ${eval.last_k_frames}
+    required_tensors: ${eval.required_tensors}
