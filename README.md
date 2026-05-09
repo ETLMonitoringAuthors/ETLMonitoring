@@ -1,8 +1,8 @@
-<h1>Embedding Temporal Logic (ETL) — Anonymous Submission</h1>
+<h1>Embedding Temporal Logic (ETL)</h1>
 
-Anonymous Author(s)
+<img src="assets/mw_monitoring.gif" width="48%"> <img src="assets/sorting_monitoring.gif" width="48%">
 
-<img src="assets/0.gif" width="12.5%"><img src="assets/1.gif" width="12.5%"><img src="assets/2.gif" width="12.5%"><img src="assets/3.gif" width="12.5%"><img src="assets/4.gif" width="12.5%"><img src="assets/5.gif" width="12.5%"><img src="assets/6.gif" width="12.5%"><img src="assets/7.gif" width="12.5%">
+*Left: ETL dual-predicate monitoring on MetaWorld pick-place-wall (grasp → place). Right: ETL 2-phase monitoring on Sorting (push block 1 → push block 2).*
 
 ----
 
