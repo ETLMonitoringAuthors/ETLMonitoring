@@ -26,6 +26,14 @@ GT_COLOR = "#64748B"
 COLORS   = [BLUE1, BLUE2]
 
 
+def _cosine_dists(embs: np.ndarray, anchor: np.ndarray) -> np.ndarray:
+    norms = np.linalg.norm(embs, axis=1, keepdims=True)
+    norms = np.where(norms < 1e-12, 1.0, norms)
+    na = np.linalg.norm(anchor)
+    na = na if na > 1e-12 else 1.0
+    return 1.0 - (embs / norms) @ (anchor / na)
+
+
 def _f1_threshold(dists: np.ndarray, gt: np.ndarray) -> float:
     best_f1, best_tau = 0.0, float(dists.max())
     for tau in np.percentile(dists, np.linspace(2, 98, 80)):
@@ -74,7 +82,7 @@ def run(data_dir: Path, out: Path, fps: int, K: int, sim_width: int):
             T = len(embs)
             s = int(k * T / K); e = max(int((k + 1) * T / K), s + 1)
             gt = np.zeros(T, dtype=bool); gt[s:e] = True
-            all_d.append(np.linalg.norm(embs - z_k, axis=1))
+            all_d.append(_cosine_dists(embs, z_k))
             all_gt.append(gt)
         taus.append(_f1_threshold(np.concatenate(all_d), np.concatenate(all_gt)))
     print(f"  taus: {[f'{t:.3f}' for t in taus]}")
@@ -101,7 +109,7 @@ def run(data_dir: Path, out: Path, fps: int, K: int, sim_width: int):
     T       = len(rollout)
     embs    = np.stack([s["obs_embedding"] for s in rollout])
 
-    dist_traces = [np.linalg.norm(embs - spec_latents[k], axis=1) for k in range(K)]
+    dist_traces = [_cosine_dists(embs, spec_latents[k]) for k in range(K)]
     pred_traces = [(dist_traces[k] <= taus[k]).astype(float) for k in range(K)]
     gt_traces   = []
     for k in range(K):
