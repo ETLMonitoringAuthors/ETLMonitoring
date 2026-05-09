@@ -3,13 +3,18 @@ Generate ETL monitoring GIF for D3IL sorting using pre-rendered rollout videos.
 
 Usage:
     conda activate newt
-    python generate_sorting_video.py --data-dir etl_d3il/data/sorting --out-dir assets
+    python generate_sorting_video.py \
+        --data-dir etl_d3il/data/sorting \
+        --gt-json  /path/to/sorting_gt.json \
+        --rollout  episode_s_0275 \
+        --out-dir  assets
 """
 
 from __future__ import annotations
 
 import argparse
 import io
+import json
 import pickle
 from pathlib import Path
 
@@ -34,18 +39,37 @@ def _cosine_dists(embs: np.ndarray, anchor: np.ndarray) -> np.ndarray:
     return 1.0 - (embs / norms) @ (anchor / na)
 
 
-def _f1_threshold(dists: np.ndarray, gt: np.ndarray) -> float:
-    best_f1, best_tau = 0.0, float(dists.max())
-    for tau in np.percentile(dists, np.linspace(2, 98, 80)):
-        pred = dists <= tau
-        tp = (pred & gt).sum(); fp = (pred & ~gt).sum(); fn = (~pred & gt).sum()
-        f1 = 2 * tp / (2 * tp + fp + fn + 1e-9)
-        if f1 > best_f1:
-            best_f1, best_tau = f1, float(tau)
-    return best_tau
+def _build_spec_latents(per_rollout_embs: list[np.ndarray], K: int) -> np.ndarray:
+    """
+    Anchor z_k = mean of the frame at the END of phase k across calibration rollouts.
+    Phase k ends at frame index int((k+1)/K * T) - 1.
+    This represents the goal state at the end of each phase, not the phase mean.
+    """
+    all_endpoints = []
+    for embs in per_rollout_embs:
+        T = len(embs)
+        pts = [embs[min(T - 1, int((k + 1) * T / K) - 1)] for k in range(K)]
+        all_endpoints.append(np.stack(pts))
+    return np.stack(all_endpoints).mean(axis=0)  # [K, D]
 
 
-def run(data_dir: Path, out: Path, fps: int, K: int, sim_width: int):
+
+def _percentile_threshold(per_rollout_embs: list[np.ndarray],
+                           spec_latents: np.ndarray, K: int,
+                           pct: float = 95.0) -> list[float]:
+    """
+    tau_k = pct-th percentile of min cosine distance to z_k across cal rollouts.
+    Fires when the episode has gotten within pct% of its closest-ever approach to goal k.
+    """
+    taus = []
+    for k in range(K):
+        min_dists = [_cosine_dists(e, spec_latents[k]).min() for e in per_rollout_embs]
+        taus.append(float(np.percentile(min_dists, pct)))
+    return taus
+
+
+def run(data_dir: Path, out: Path, fps: int, K: int, sim_width: int,
+        gt_json: Path | None, rollout_stem: str | None):
     cal_dir  = data_dir / "rollouts" / "calibration"
     test_dir = data_dir / "rollouts" / "test"
     vid_dir  = data_dir / "rollouts" / "videos" / "test"
@@ -62,44 +86,31 @@ def run(data_dir: Path, out: Path, fps: int, K: int, sim_width: int):
         )
     print(f"  loaded {len(per_rollout_embs)} successful cal rollouts")
 
-    # ── K-phase spec latents by equal-time segmentation ──────────────────────
-    all_phase_means = []
-    for embs in per_rollout_embs:
-        T = len(embs)
-        phase_means = []
-        for k in range(K):
-            s = int(k * T / K); e = max(int((k + 1) * T / K), s + 1)
-            phase_means.append(embs[s:e].mean(axis=0))
-        all_phase_means.append(np.stack(phase_means))
-    spec_latents = np.stack(all_phase_means).mean(axis=0)  # [K, D]
+    # ── spec latents: end-of-phase anchors ──────────────────────────────────
+    spec_latents = _build_spec_latents(per_rollout_embs, K)
 
-    # ── F1 thresholds ────────────────────────────────────────────────────────
-    taus = []
-    for k in range(K):
-        z_k = spec_latents[k]
-        all_d, all_gt = [], []
-        for embs in per_rollout_embs:
-            T = len(embs)
-            s = int(k * T / K); e = max(int((k + 1) * T / K), s + 1)
-            gt = np.zeros(T, dtype=bool); gt[s:e] = True
-            all_d.append(_cosine_dists(embs, z_k))
-            all_gt.append(gt)
-        taus.append(_f1_threshold(np.concatenate(all_d), np.concatenate(all_gt)))
-    print(f"  taus: {[f'{t:.3f}' for t in taus]}")
+    # ── thresholds: 95th-pct of min-distances on cal set ────────────────────
+    taus = _percentile_threshold(per_rollout_embs, spec_latents, K, pct=95.0)
+    print(f"  spec latents built  taus: {[f'{t:.3f}' for t in taus]}")
 
-    # ── pick a successful test rollout ────────────────────────────────────────
+    # ── pick test rollout ────────────────────────────────────────────────────
     chosen = None
-    for fp in sorted(test_dir.glob("*.pkl")):
-        with open(fp, "rb") as f:
-            d = pickle.load(f)
-        if d["metadata"].get("successful", False):
-            chosen = (fp, d)
-            break
+    if rollout_stem:
+        fp = test_dir / f"{rollout_stem}.pkl"
+        if fp.exists():
+            with open(fp, "rb") as f:
+                chosen = (fp, pickle.load(f))
     if chosen is None:
-        fp = sorted(test_dir.glob("*.pkl"))[0]
-        with open(fp, "rb") as f:
-            d = pickle.load(f)
-        chosen = (fp, d)
+        for fp in sorted(test_dir.glob("*.pkl")):
+            if not (vid_dir / f"{fp.stem}.mp4").exists():
+                continue
+            with open(fp, "rb") as f:
+                d = pickle.load(f)
+            if d["metadata"].get("successful", False):
+                chosen = (fp, d)
+                break
+    if chosen is None:
+        raise RuntimeError("No suitable test rollout with matching video found.")
 
     fp, d = chosen
     stem = fp.stem
@@ -110,12 +121,30 @@ def run(data_dir: Path, out: Path, fps: int, K: int, sim_width: int):
     embs    = np.stack([s["obs_embedding"] for s in rollout])
 
     dist_traces = [_cosine_dists(embs, spec_latents[k]) for k in range(K)]
-    pred_traces = [(dist_traces[k] <= taus[k]).astype(float) for k in range(K)]
-    gt_traces   = []
-    for k in range(K):
-        s = int(k * T / K); e = max(int((k + 1) * T / K), s + 1)
-        gt = np.zeros(T, dtype=bool); gt[s:e] = True
-        gt_traces.append(gt.astype(float))
+    # F(near_k): satisfied at t iff min_{t'<=t} dist(z_t', z_k) <= tau_k
+    pred_traces = [(np.minimum.accumulate(dist_traces[k]) <= taus[k]).astype(float)
+                   for k in range(K)]
+
+    # ── GT traces ────────────────────────────────────────────────────────────
+    if gt_json is not None and gt_json.exists():
+        with open(gt_json) as f:
+            gt_data = json.load(f)
+        gt_keys = ["red_in_bin", "blue_in_bin"]
+        gt_traces = [np.array([g[gt_keys[k]] for g in gt_data], dtype=float)
+                     for k in range(K)]
+        print(f"  GT loaded from {gt_json}")
+        for k, key in enumerate(gt_keys[:K]):
+            first = next((i for i, v in enumerate(gt_traces[k]) if v), None)
+            print(f"    {key} first True at t={first}")
+    else:
+        # fallback: equal-time segmentation proxy (no VLM GT available)
+        gt_traces = []
+        for k in range(K):
+            arr = np.zeros(T, dtype=float)
+            s = int(k * T / K); e = int((k + 1) * T / K)
+            arr[s:e] = 1.0
+            gt_traces.append(arr)
+        print("  GT: equal-time proxy (no --gt-json provided)")
 
     # ── extract sim frames ────────────────────────────────────────────────────
     vid_path = vid_dir / f"{stem}.mp4"
@@ -140,7 +169,7 @@ def run(data_dir: Path, out: Path, fps: int, K: int, sim_width: int):
 
     # ── composite ─────────────────────────────────────────────────────────────
     d_ylims = [max(tr.max() * 1.15, taus[k] * 1.3) for k, tr in enumerate(dist_traces)]
-    labels  = [f"block {k+1}" for k in range(K)]
+    labels  = ["red block", "blue block"]
 
     def _panel(t):
         ratios = [2.0] * K + [0.55] * K
@@ -202,17 +231,23 @@ def run(data_dir: Path, out: Path, fps: int, K: int, sim_width: int):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data-dir", default="etl_d3il/data/sorting")
-    ap.add_argument("--out-dir",  default="assets")
-    ap.add_argument("--fps",      type=int, default=12)
-    ap.add_argument("--k",        type=int, default=2)
-    ap.add_argument("--width",    type=int, default=480)
+    ap.add_argument("--data-dir",  default="etl_d3il/data/sorting")
+    ap.add_argument("--out-dir",   default="assets")
+    ap.add_argument("--fps",       type=int,   default=12)
+    ap.add_argument("--k",         type=int,   default=2)
+    ap.add_argument("--width",     type=int,   default=480)
+    ap.add_argument("--gt-json",   default=None,
+                    help="Path to per-timestep GT JSON from label_sorting_gt.py")
+    ap.add_argument("--rollout",   default=None,
+                    help="Rollout stem to visualize (e.g. episode_s_0275)")
     args = ap.parse_args()
 
     out = Path(args.out_dir)
     out.mkdir(exist_ok=True)
+    gt_json = Path(args.gt_json) if args.gt_json else None
     print("Generating sorting monitoring GIF…")
-    run(Path(args.data_dir), out, fps=args.fps, K=args.k, sim_width=args.width)
+    run(Path(args.data_dir), out, fps=args.fps, K=args.k, sim_width=args.width,
+        gt_json=gt_json, rollout_stem=args.rollout)
     print("Done.")
 
 

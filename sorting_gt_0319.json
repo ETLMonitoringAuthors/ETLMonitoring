@@ -1,0 +1,207 @@
+[
+  {
+    "t": 0,
+    "red_in_bin": false,
+    "blue_in_bin": false
+  },
+  {
+    "t": 1,
+    "red_in_bin": false,
+    "blue_in_bin": false
+  },
+  {
+    "t": 2,
+    "red_in_bin": false,
+    "blue_in_bin": false
+  },
+  {
+    "t": 3,
+    "red_in_bin": false,
+    "blue_in_bin": false
+  },
+  {
+    "t": 4,
+    "red_in_bin": false,
+    "blue_in_bin": false
+  },
+  {
+    "t": 5,
+    "red_in_bin": false,
+    "blue_in_bin": false
+  },
+  {
+    "t": 6,
+    "red_in_bin": false,
+    "blue_in_bin": false
+  },
+  {
+    "t": 7,
+    "red_in_bin": false,
+    "blue_in_bin": false
+  },
+  {
+    "t": 8,
+    "red_in_bin": false,
+    "blue_in_bin": false
+  },
+  {
+    "t": 9,
+    "red_in_bin": false,
+    "blue_in_bin": false
+  },
+  {
+    "t": 10,
+    "red_in_bin": false,
+    "blue_in_bin": false
+  },
+  {
+    "t": 11,
+    "red_in_bin": false,
+    "blue_in_bin": false
+  },
+  {
+    "t": 12,
+    "red_in_bin": false,
+    "blue_in_bin": false
+  },
+  {
+    "t": 13,
+    "red_in_bin": false,
+    "blue_in_bin": false
+  },
+  {
+    "t": 14,
+    "red_in_bin": false,
+    "blue_in_bin": false
+  },
+  {
+    "t": 15,
+    "red_in_bin": true,
+    "blue_in_bin": false
+  },
+  {
+    "t": 16,
+    "red_in_bin": true,
+    "blue_in_bin": false
+  },
+  {
+    "t": 17,
+    "red_in_bin": true,
+    "blue_in_bin": false
+  },
+  {
+    "t": 18,
+    "red_in_bin": true,
+    "blue_in_bin": false
+  },
+  {
+    "t": 19,
+    "red_in_bin": true,
+    "blue_in_bin": false
+  },
+  {
+    "t": 20,
+    "red_in_bin": true,
+    "blue_in_bin": false
+  },
+  {
+    "t": 21,
+    "red_in_bin": true,
+    "blue_in_bin": false
+  },
+  {
+    "t": 22,
+    "red_in_bin": true,
+    "blue_in_bin": false
+  },
+  {
+    "t": 23,
+    "red_in_bin": true,
+    "blue_in_bin": false
+  },
+  {
+    "t": 24,
+    "red_in_bin": true,
+    "blue_in_bin": false
+  },
+  {
+    "t": 25,
+    "red_in_bin": true,
+    "blue_in_bin": false
+  },
+  {
+    "t": 26,
+    "red_in_bin": true,
+    "blue_in_bin": false
+  },
+  {
+    "t": 27,
+    "red_in_bin": true,
+    "blue_in_bin": false
+  },
+  {
+    "t": 28,
+    "red_in_bin": true,
+    "blue_in_bin": false
+  },
+  {
+    "t": 29,
+    "red_in_bin": true,
+    "blue_in_bin": false
+  },
+  {
+    "t": 30,
+    "red_in_bin": true,
+    "blue_in_bin": false
+  },
+  {
+    "t": 31,
+    "red_in_bin": true,
+    "blue_in_bin": false
+  },
+  {
+    "t": 32,
+    "red_in_bin": true,
+    "blue_in_bin": true
+  },
+  {
+    "t": 33,
+    "red_in_bin": true,
+    "blue_in_bin": true
+  },
+  {
+    "t": 34,
+    "red_in_bin": true,
+    "blue_in_bin": true
+  },
+  {
+    "t": 35,
+    "red_in_bin": true,
+    "blue_in_bin": true
+  },
+  {
+    "t": 36,
+    "red_in_bin": true,
+    "blue_in_bin": true
+  },
+  {
+    "t": 37,
+    "red_in_bin": true,
+    "blue_in_bin": true
+  },
+  {
+    "t": 38,
+    "red_in_bin": true,
+    "blue_in_bin": true
+  },
+  {
+    "t": 39,
+    "red_in_bin": true,
+    "blue_in_bin": true
+  },
+  {
+    "t": 40,
+    "red_in_bin": true,
+    "blue_in_bin": true
+  }
+]
