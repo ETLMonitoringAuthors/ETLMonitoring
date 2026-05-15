@@ -1,8 +1,8 @@
 <h1>Embedding Temporal Logic (ETL)</h1>
 
-<img src="assets/mw_monitoring.gif" width="48%"> <img src="assets/sorting_monitoring.gif" width="48%">
+<img src="assets/mw_monitoring.gif" width="32%"> <img src="assets/sorting_monitoring.gif" width="32%"> <img src="assets/droid_monitoring.gif" width="32%">
 
-*Left: ETL dual-predicate monitoring on MetaWorld pick-place-wall (grasp → place). Right: ETL 2-phase monitoring on Sorting (push block 1 → push block 2).*
+*Left: ETL dual-predicate monitoring on MetaWorld pick-place-wall (grasp → place). Center: ETL 2-phase monitoring on D3IL Sorting (push block 1 → push block 2). Right: ETL 2-phase monitoring on DROID real-robot pick-and-place (exterior camera).*
 
 ----
 
