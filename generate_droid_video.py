@@ -295,12 +295,19 @@ def main():
 
     labels = ["pick", "place"][:K]
 
-    # exterior frames → resize to 480×270 (16:9)
-    CAM_W, CAM_H = 480, 270
-    ext_resized = [
-        np.array(Image.fromarray(f).resize((CAM_W, CAM_H), Image.LANCZOS))
-        for f in ext_frames
-    ]
+    # exterior frames → resize to 480×270 (16:9) then letterbox to 480×480
+    CAM_W = 480
+    scaled_h = CAM_W * 180 // 320  # 270
+    pad_top  = (CAM_W - scaled_h) // 2   # 105
+    pad_bot  = CAM_W - scaled_h - pad_top
+
+    def _letterbox(f: np.ndarray) -> np.ndarray:
+        img = np.array(Image.fromarray(f).resize((CAM_W, scaled_h), Image.LANCZOS))
+        top = np.zeros((pad_top, CAM_W, 3), dtype=np.uint8)
+        bot = np.zeros((pad_bot, CAM_W, 3), dtype=np.uint8)
+        return np.vstack([top, img, bot])  # 480×480
+
+    ext_resized = [_letterbox(f) for f in ext_frames]
 
     print(f"  Compositing {T} frames (step={args.step})…", flush=True)
     display_indices = list(range(0, T, args.step))
